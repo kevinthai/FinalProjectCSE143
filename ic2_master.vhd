@@ -6,7 +6,7 @@ ENTITY I2C_Master IS
 	PORT (	clk		: IN STD_LOGIC;
 			data_in	: IN STD_LOGIC_VECTOR (7 downto 0);
 			scl		: OUT STD_LOGIC;
-			sda		: OUT STD_LOGIC;
+			sda		: INOUT STD_LOGIC;
 			data_out: OUT STD_LOGIC_VECTOR (7 downto 0)
 			);
 END I2C_Slave;

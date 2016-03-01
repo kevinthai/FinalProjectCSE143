@@ -15,14 +15,14 @@ ARCHITECTURE I2C_KLKT_behav IS
 		PORT (	clk		: IN STD_LOGIC;
 				data_in	: IN STD_LOGIC_VECTOR (7 downto 0);
 				scl		: OUT STD_LOGIC;
-				sda		: OUT STD_LOGIC;
+				sda		: INOUT STD_LOGIC;
 				data_out: OUT STD_LOGIC_VECTOR (7 downto 0)
 				);
 	END COMPONENT I2C_Slave; 
 	
 	COMPONENT KLT IS
 	PORT (	scl		: IN STD_LOGIC;
-			sda		: OUT STD_LOGIC;
+			sda		: INOUT STD_LOGIC;
 			);
 	END COMPONENT KLT;
 	
