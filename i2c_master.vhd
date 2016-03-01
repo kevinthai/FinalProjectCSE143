@@ -9,7 +9,7 @@ ENTITY I2C_Master IS
 			sda		: INOUT STD_LOGIC;
 			data_out: OUT STD_LOGIC_VECTOR (7 downto 0)
 			);
-END I2C_Slave;
+END I2C_Master;
 
 ARCHITECTURE I2C_M_behav OF I2C_Master IS
 BEGIN
