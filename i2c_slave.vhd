@@ -4,10 +4,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 ENTITY I2C_Slave IS
 	PORT (	scl		: IN STD_LOGIC;
-			data_in	: IN STD_LOGIC_VECTOR (7 downto 0);
 			clk		: OUT STD_LOGIC;
 			sda		: INOUT STD_LOGIC;
-			data_out: OUT STD_LOGIC_VECTOR (7 downto 0)
+			data	: OUT STD_LOGIC_VECTOR (7 downto 0)
 			);
 END I2C_Slave;
 
