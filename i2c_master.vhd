@@ -6,13 +6,13 @@ ENTITY I2C_Master IS
 	GENERIC (
 			clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
 			data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
-			write_time: POSITIVE := 5;		-- max write time in ms
+			write_time: POSITIVE := 5		-- max write time in ms
 			);
 	PORT (	clk, reset	: IN STD_LOGIC;
 			rd, wr		: IN STD_LOGIC; 
 			data		: IN STD_LOGIC_VECTOR (7 downto 0);
 			scl			: OUT STD_LOGIC;
-			sda			: INOUT STD_LOGIC;
+			sda			: INOUT STD_LOGIC
 			);
 END I2C_Master;
 
