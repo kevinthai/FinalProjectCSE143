@@ -20,7 +20,6 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	--General constants and signals:
 	CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
 	CONSTANT delay: INTEGER := write_time*data_rate;
-	CONSTANT device_addr_write: STD_LOGIC_VECTOR(7 DOWNTO 0) := "00000000";
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay;
 	SIGNAL data_out: STD_LOGIC_VECTOR(7 DOWNTO 0);
@@ -28,10 +27,10 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	SIGNAL ack: STD_LOGIC;
 	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
-	TYPE state IS (IDLE, ACK1, ACK2, START_WRITE, WRITE_DATA, DEV_ADDR_WR, STOP);
+	TYPE state IS (IDLE, ACK, START_WRITE, WRITE_DATA, STOP);
 	SIGNAL p_state, n_state: state; --present/next states
 BEGIN
-	
+	data_out <= data;
 	----------------Auxiliary clock:----------------
 	PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
@@ -80,7 +79,7 @@ BEGIN
 			--Store write flags;
 			write_flag <= wr;
 			--Store ACK signal during writing
-			IF (p_state = ACK1) THEN
+			IF (p_state = ACK) THEN
 				ack <= sda;
 			END IF;
 		END IF;
@@ -103,23 +102,13 @@ BEGIN
 				scl <= '1'
 				sda <= data_clk;	--start sequence
 				timer <= 1;
-				n_state <= DEV_ADDR_WR;
-			WHEN DEV_ADDR_WR =>
-				scl <= bus_clk;
-				sda <= device_addr_write(7-i);
-				timer <= 8;
-				n_state <= ACK1;
-			WHEN ACK1 =>
-				scl <= bus_clk;
-				sda <= 'Z';
-				timer <= 1;
 				n_state <= WRITE_DATA;
 			WHEN WRITE_DATA =>
 				scl <= bus_clk;
 				sda <=data_out(7-i);
 				timer <= 8;
-				n_state <= ACK2;
-			WHEN ACK2 =>
+				n_state <= ACK;
+			WHEN ACK =>
 				scl <= bus_clk;
 				sda <= 'Z';
 				timer <= 1;

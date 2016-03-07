@@ -19,7 +19,16 @@ END I2C_Slave;
 ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	--General constants and signals:
 	CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
+	CONSTANT delay: INTEGER := write_time*data_rate;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
+	SIGNAL timer: NATURAL RANGE 0 TO delay;
+	SIGNAL data_in: STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL start: STD_LOGIC := '0';
+	SIGNAL stop: STD_LOGIC := '0';
+	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
+	--State machine signals:
+	TYPE state IS (IDLE, ACK, RECEIVE_DATA);
+	SIGNAL p_state, n_state: state; --present/next states
 
 BEGIN
 	
@@ -58,7 +67,7 @@ BEGIN
 	PROCESS (data_clk, reset)
 	BEGIN
 		IF (reset = '1') THEN
-			p_state <= IDLE;
+			p_state <= IDLE
 			i := 0;
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
 			IF (i=timer-1) THEN
@@ -67,16 +76,37 @@ BEGIN
 			ELSE
 				i := i + 1;
 			END IF;
-		ELSIF (data_clk'EVENT AND data_clk='0') THEN
-			--Store write flags;
-			write_flag <= wr;
-			--Store ACK signal during writing
-			IF (p_state = ACK1) THEN
-				ack <= sda;
-			END IF;
 		END IF;
 	END PROCESS;
 	
+	----------------Combinational section of FSM----------------
+	PROCESS (p_state, start, stop, sda)
+	BEGIN
+		CASE p_state IS
+			WHEN IDLE =>
+				sda <= 'Z';
+				timer <= delay;
+				IF (start = '1') THEN
+					n_state <= RECEIVE_DATA;	--start condition detected
+				ELSE
+					n_state <= IDLE;
+				END IF;
+			WHEN RECEIVE_DATA =>
+				timer <= 8
+				data_in(7-i) <= sda;
+				sda <= 'Z';
+				n_state <= ACK;
+			WHEN ACK =>
+				sda <= '0';
+				timer <= 1;
+				IF (stop = '1') THEN
+					n_state <= IDLE;	--stop condition detected
+				ELSE
+					n_state <= RECEIVE_DATA
+				END IF;
+		END CASE;
+		
+	END PROCESS;
 END I2C_S_behav;
 
 -- data_out may change depending on how the images will be sent.
