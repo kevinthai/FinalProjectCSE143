@@ -142,7 +142,7 @@ BEGIN
 	END PROCESS;
 END I2C_M_behav;
 
--- data may change depending on how the images will be sent.
+-- data_in may change depending on how the images will be sent.
 -- data_out may change depending on how the displacement will be
 -- returned.
 -- data/out sizes is arbitrary set for now
