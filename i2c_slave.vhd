@@ -54,6 +54,28 @@ BEGIN
 		END IF;
 	END PROCESS;
 	
+	----------------Sequential section of FSM----------------
+	PROCESS (data_clk, reset)
+	BEGIN
+		IF (reset = '1') THEN
+			p_state <= IDLE;
+			i := 0;
+		ELSIF (data_clk'EVENT AND data_clk='1') THEN
+			IF (i=timer-1) THEN
+				p_state <= n_state;
+				i := 0;
+			ELSE
+				i := i + 1;
+			END IF;
+		ELSIF (data_clk'EVENT AND data_clk='0') THEN
+			--Store write flags;
+			write_flag <= wr;
+			--Store ACK signal during writing
+			IF (p_state = ACK1) THEN
+				ack <= sda;
+			END IF;
+		END IF;
+	END PROCESS;
 	
 END I2C_S_behav;
 

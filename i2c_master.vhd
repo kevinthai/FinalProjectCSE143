@@ -94,7 +94,7 @@ BEGIN
 				scl <= '1';
 				sda <= '1';
 				timer <= delay; --max write time=5ms
-				IF (write_flag='1' OR read_flag='1') THEN
+				IF (write_flag='1') THEN
 					n_state <= START_WRITE;
 				ELSE
 					n_state <= IDLE;
@@ -113,11 +113,7 @@ BEGIN
 				scl <= bus_clk;
 				sda <= 'Z';
 				timer <= 1;
-				IF (write_flag = '1') THEN
-					n_state <= WRITE_DATA;
-				ELSE
-					n_state <= START_READ;
-				END IF;
+				n_state <= WRITE_DATA;
 			WHEN WRITE_DATA =>
 				scl <= bus_clk;
 				sda <=data_out(7-i);
