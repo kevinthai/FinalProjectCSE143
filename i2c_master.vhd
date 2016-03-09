@@ -2,17 +2,22 @@ LIBRARY ieee;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_1164.ALL;
 
+LIBRARY work;
+use work.reg.ALL;
+
 ENTITY I2C_Master IS
 	GENERIC (
 			clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
 			data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
 			write_time: POSITIVE := 5		-- max write time in ms
 			);
-	PORT (	clk, reset	: IN STD_LOGIC;
-			wr			: IN STD_LOGIC; 
-			data		: IN STD_LOGIC_VECTOR (7 downto 0);
-			scl			: OUT STD_LOGIC;
-			sda			: INOUT STD_LOGIC
+	PORT (	clk		: IN STD_LOGIC;
+			reset	: IN STD_LOGIC;
+			start	: IN STD_LOGIC;
+			wr		: IN STD_LOGIC; 
+			data	: IN regfile;
+			scl		: OUT STD_LOGIC;
+			sda		: INOUT STD_LOGIC
 			);
 END I2C_Master;
 
@@ -22,10 +27,11 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	CONSTANT delay: INTEGER := write_time*data_rate;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay;
-	SIGNAL data_out: STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL data_out: regfile;
+	SIGNAL r: NATURAL RANGE 0 to depth-1;
 	SIGNAL write_flag: STD_LOGIC;
 	SIGNAL ack: STD_LOGIC;
-	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
+	SIGNAL i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
 	TYPE state IS (IDLE, ACK1, START_WRITE, WRITE_DATA, STOP);
 	SIGNAL p_state, n_state: state; --present/next states
@@ -67,13 +73,16 @@ BEGIN
 	BEGIN
 		IF (reset = '1') THEN
 			p_state <= IDLE;
-			i := 0;
+			i <= 0;
+			r <= 0;
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
-			IF (i=timer-1) THEN
+			IF ((p_state = IDLE) AND (start = '1')) THEN
 				p_state <= n_state;
-				i := 0;
+			ELSIF (i=timer-1) THEN
+				p_state <= n_state;
+				i <= 0;
 			ELSE
-				i := i + 1;
+				i <= i + 1;
 			END IF;
 		ELSIF (data_clk'EVENT AND data_clk='0') THEN
 			--Store write flags;
@@ -81,6 +90,9 @@ BEGIN
 			--Store ACK signal during writing
 			IF (p_state = ACK1) THEN
 				ack <= sda;
+				IF (wr = '1') THEN
+					r <= r + 1;
+				END IF;
 			END IF;
 		END IF;
 	END PROCESS;
@@ -105,7 +117,7 @@ BEGIN
 				n_state <= WRITE_DATA;
 			WHEN WRITE_DATA =>
 				scl <= bus_clk;
-				sda <=data_out(7-i);
+				sda <=data_out(r)(7-i);
 				timer <= 8;
 				n_state <= ACK1;
 			WHEN ACK1 =>

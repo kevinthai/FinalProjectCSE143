@@ -8,11 +8,12 @@ ENTITY I2C_Slave IS
 			data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
 			write_time: POSITIVE := 5		-- max write time in ms
 			);
-	PORT (	scl			: IN STD_LOGIC;
-			clk, reset	: IN STD_LOGIC;
-			rd			: IN STD_LOGIC;
-			sda			: INOUT STD_LOGIC;
-			data		: OUT STD_LOGIC_VECTOR (7 downto 0)
+	PORT (	scl		: IN STD_LOGIC;
+			clk		: IN STD_LOGIC;
+			reset	: IN STD_LOGIC
+			rd		: IN STD_LOGIC;
+			sda		: INOUT STD_LOGIC;
+			data	: OUT STD_LOGIC_VECTOR (7 downto 0)
 			);
 END I2C_Slave;
 
@@ -34,7 +35,7 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	SIGNAL sda_reg: STD_LOGIC := '1';
 	SIGNAL sda_prev_reg: STD_LOGIC := '1';
 	
-	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
+	SIGNAL i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
 	TYPE state IS (IDLE, ACK, RECEIVE_DATA);
 	SIGNAL p_state, n_state: state; --present/next states
@@ -77,13 +78,13 @@ BEGIN
 	BEGIN
 		IF (reset = '1') THEN
 			p_state <= IDLE;
-			i := 0;
+			i <= 0;
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
 			IF (i=timer-1) THEN
 				p_state <= n_state;
-				i := 0;
+				i <= 0;
 			ELSE
-				i := i + 1;
+				i <= i + 1;
 			END IF;
 			
 			--See how scl changes within the past 2 clock cycles
