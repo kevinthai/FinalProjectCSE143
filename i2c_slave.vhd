@@ -23,8 +23,17 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay;
 	SIGNAL data_in: STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL start: STD_LOGIC := '0';
-	SIGNAL stop: STD_LOGIC := '0';
+	SIGNAL start: STD_LOGIC := '0';	--indicated i2c start condition
+	SIGNAL stop: STD_LOGIC := '0';	--indicates i2c stop condition
+	
+	--scl signals delayed by 1 clock cycle and 2 clock cycles
+	SIGNAL scl_reg: STD_LOGIC := '1';
+	SIGNAL scl_prev_reg: STD_LOGIC := '1';
+	
+	--sda signals delayed by 1 clock cycle and 2 clock cycles
+	SIGNAL sda_reg: STD_LOGIC := '1';
+	SIGNAL sda_prev_reg: STD_LOGIC := '1';
+	
 	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
 	TYPE state IS (IDLE, ACK, RECEIVE_DATA);
@@ -76,6 +85,31 @@ BEGIN
 			ELSE
 				i := i + 1;
 			END IF;
+			
+			--See how scl changes within the past 2 clock cycles
+			scl_reg <= scl;
+			scl_prev_reg <= scl_reg;
+			
+			--See how sda changes within the past 2 clock cycles
+			sda_reg <= sda;
+			sda_prev_reg <= sda_reg;
+			
+			--Look for i2c start condition
+			start <= '0';
+			stop <= '0';
+			IF ((scl_prev_reg = '1') AND (scl_reg = '1') AND 
+				(sda_prev_reg = '1') AND (sda_reg = '0')) THEN
+				start <= '1';
+				stop <= '0';
+			END IF;
+			
+			--Look for i2c stop condition
+			IF ((scl_prev_reg = '1') AND (scl_reg = '1') AND 
+				(sda_prev_reg = '0') AND (sda_reg = '1')) THEN
+				start <= '0';
+				stop <= '1';
+			END IF;
+			
 		END IF;
 	END PROCESS;
 	
