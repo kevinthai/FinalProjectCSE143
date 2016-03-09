@@ -23,7 +23,7 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay;
 	SIGNAL data_in: STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL start: STD_LOGIC := '0';	--indicated i2c start condition
+	SIGNAL start: STD_LOGIC := '0';	--indicates i2c start condition
 	SIGNAL stop: STD_LOGIC := '0';	--indicates i2c stop condition
 	
 	--scl signals delayed by 1 clock cycle and 2 clock cycles
@@ -40,7 +40,7 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	SIGNAL p_state, n_state: state; --present/next states
 
 BEGIN
-	
+	data <= data_in;
 	----------------Auxiliary clock:----------------
 	PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
@@ -65,9 +65,9 @@ BEGIN
 			ELSIF (count = 1) THEN
 				data_clk <= '1';
 			ELSIF (count = 2) THEN
-				bus_clk <= '1'
+				bus_clk <= '1';
 			ELSE
-				data_clk <= '0'
+				data_clk <= '0';
 			END IF;
 		END IF;
 	END PROCESS;
@@ -76,7 +76,7 @@ BEGIN
 	PROCESS (data_clk, reset)
 	BEGIN
 		IF (reset = '1') THEN
-			p_state <= IDLE
+			p_state <= IDLE;
 			i := 0;
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
 			IF (i=timer-1) THEN
@@ -126,7 +126,7 @@ BEGIN
 					n_state <= IDLE;
 				END IF;
 			WHEN RECEIVE_DATA =>
-				timer <= 8
+				timer <= 8;
 				data_in(7-i) <= sda;
 				sda <= 'Z';
 				n_state <= ACK;
@@ -136,7 +136,7 @@ BEGIN
 				IF (stop = '1') THEN
 					n_state <= IDLE;	--stop condition detected
 				ELSE
-					n_state <= RECEIVE_DATA
+					n_state <= RECEIVE_DATA;
 				END IF;
 		END CASE;
 		

@@ -27,7 +27,7 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	SIGNAL ack: STD_LOGIC;
 	SHARED VARIABLE i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
-	TYPE state IS (IDLE, ACK, START_WRITE, WRITE_DATA, STOP);
+	TYPE state IS (IDLE, ACK1, START_WRITE, WRITE_DATA, STOP);
 	SIGNAL p_state, n_state: state; --present/next states
 BEGIN
 	data_out <= data;
@@ -55,9 +55,9 @@ BEGIN
 			ELSIF (count = 1) THEN
 				data_clk <= '1';
 			ELSIF (count = 2) THEN
-				bus_clk <= '1'
+				bus_clk <= '1';
 			ELSE
-				data_clk <= '0'
+				data_clk <= '0';
 			END IF;
 		END IF;
 	END PROCESS;
@@ -79,7 +79,7 @@ BEGIN
 			--Store write flags;
 			write_flag <= wr;
 			--Store ACK signal during writing
-			IF (p_state = ACK) THEN
+			IF (p_state = ACK1) THEN
 				ack <= sda;
 			END IF;
 		END IF;
@@ -99,7 +99,7 @@ BEGIN
 					n_state <= IDLE;
 				END IF;
 			WHEN START_WRITE =>
-				scl <= '1'
+				scl <= '1';
 				sda <= data_clk;	--start sequence
 				timer <= 1;
 				n_state <= WRITE_DATA;
@@ -107,8 +107,8 @@ BEGIN
 				scl <= bus_clk;
 				sda <=data_out(7-i);
 				timer <= 8;
-				n_state <= ACK;
-			WHEN ACK =>
+				n_state <= ACK1;
+			WHEN ACK1 =>
 				scl <= bus_clk;
 				sda <= 'Z';
 				timer <= 1;
@@ -121,7 +121,7 @@ BEGIN
 				scl <= '1';
 				sda <= NOT data_clk;	--stop sequence
 				timer <= 1;
-				nx_state <= idle;
+				n_state <= IDLE;
 		END CASE;
 				
 	END PROCESS;
