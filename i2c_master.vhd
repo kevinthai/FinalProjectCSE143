@@ -16,20 +16,23 @@ ENTITY I2C_Master IS
 			start	: IN STD_LOGIC;
 			wr		: IN STD_LOGIC; 
 			data	: IN regfile;
+			data_len: IN NATURAL RANGE 1 to 16;
 			scl		: OUT STD_LOGIC;
-			sda		: INOUT STD_LOGIC
+			sda		: INOUT STD_LOGIC;
+			busy	: OUT STD_LOGIC 
 			);
 END I2C_Master;
 
 ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	--General constants and signals:
-	CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
-	CONSTANT delay: INTEGER := write_time*data_rate;
+		--CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
+	CONSTANT divider: INTEGER := 31;
+		--CONSTANT delay: INTEGER := write_time*data_rate;
+	CONSTANT delay: INTEGER := 7
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay;
 	SIGNAL data_out: regfile;
-	SIGNAL r: NATURAL RANGE 0 to depth-1;
-	SIGNAL write_flag: STD_LOGIC;
+	SIGNAL r: NATURAL RANGE 0 to reg_depth-1;
 	SIGNAL ack: STD_LOGIC;
 	SIGNAL i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
@@ -38,10 +41,13 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 BEGIN
 	data_out <= data;
 	----------------Auxiliary clock:----------------
-	PROCESS (clk)
+	ACLK: PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
 	BEGIN
-		IF (clk'EVENT AND clk='1') THEN
+		IF (reset = '1') THEN
+			aux_clk <= '0';
+			count := 0;
+		ELSIF (clk'EVENT AND clk='1') THEN
 			count := count + 1;
 			IF(count = divider) THEN
 				aux_clk <= NOT aux_clk;
@@ -51,10 +57,14 @@ BEGIN
 	END PROCESS;
 	
 	----------------Bus and Data clocks:----------------
-	PROCESS (aux_clk)
+	D_B_CLKS: PROCESS (aux_clk)
 		VARIABLE count: INTEGER RANGE 0 TO 3;
 	BEGIN
-		IF (aux_clk'EVENT AND aux_clk='1') THEN
+		IF (reset = '1') THEN
+			count := 0;
+			bus_clk <= '0';
+			data_clk <= '0';
+		ELSIF (aux_clk'EVENT AND aux_clk='1') THEN
 			count := count + 1;
 			IF (count = 0) THEN
 				bus_clk <= '0';
@@ -64,6 +74,7 @@ BEGIN
 				bus_clk <= '1';
 			ELSE
 				data_clk <= '0';
+				count := 0;
 			END IF;
 		END IF;
 	END PROCESS;
@@ -72,70 +83,78 @@ BEGIN
 	PROCESS (data_clk, reset)
 	BEGIN
 		IF (reset = '1') THEN
+			--Initial state is IDLE
 			p_state <= IDLE;
 			i <= 0;
 			r <= 0;
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
-			IF ((p_state = IDLE) AND (start = '1')) THEN
-				p_state <= n_state;
-			ELSIF (i=timer-1) THEN
+			--Jump to next state after number of cycles specified by timer
+			IF (i = timer - 1) THEN
 				p_state <= n_state;
 				i <= 0;
+				IF (p_state = ACK1) THEN
+					r <= r + 1; --write the next byte
+				ELSIF (p_state = IDLE) THEN
+					r <= 0;
+				END IF;
 			ELSE
 				i <= i + 1;
 			END IF;
 		ELSIF (data_clk'EVENT AND data_clk='0') THEN
-			--Store write flags;
-			write_flag <= wr;
 			--Store ACK signal during writing
 			IF (p_state = ACK1) THEN
 				ack <= sda;
-				IF (wr = '1') THEN
-					r <= r + 1;
-				END IF;
 			END IF;
 		END IF;
 	END PROCESS;
 	
 	----------------Combinational section of FSM----------------
-	PROCESS (p_state, bus_clk, data_clk, write_flag, data_out, sda)
+	PROCESS (p_state, bus_clk, data_clk, wr, data_out, sda)
 	BEGIN
 		CASE p_state IS
 			WHEN IDLE =>
-				scl <= '1';
-				sda <= '1';
-				timer <= delay; --max write time=5ms
-				IF (write_flag='1') THEN
+				scl <= 'Z';
+				sda <= 'Z';
+				timer <= 1; 
+				busy <= '0'; --i2c is not busy
+				IF ((start = '1') AND (wr = '1')) THEN
 					n_state <= START_WRITE;
 				ELSE
 					n_state <= IDLE;
 				END IF;
 			WHEN START_WRITE =>
-				scl <= '1';
+				scl <= 'Z';
 				sda <= data_clk;	--start sequence
 				timer <= 1;
+				busy <= '1'; --i2c is busy
 				n_state <= WRITE_DATA;
 			WHEN WRITE_DATA =>
 				scl <= bus_clk;
-				sda <=data_out(r)(7-i);
+				IF (data_out(r)(7-i) = '1') THEN
+					sda = 'Z';
+				ELSE
+					sda = '0';
+				END IF;
+				busy <= '1';
 				timer <= 8;
 				n_state <= ACK1;
 			WHEN ACK1 =>
 				scl <= bus_clk;
 				sda <= 'Z';
 				timer <= 1;
-				IF (write_flag = '1') THEN
-					n_state <= WRITE_DATA;
+				busy <= '1';
+				IF (r = (data_len - 1)) THEN
+					n_state <= STOP;	--all bytes have been written
 				ELSE
-					n_state <= STOP;
+					n_state <= WRITE_DATA;	--not all bytes have been written, continue writing
 				END IF;
 			WHEN STOP =>
-				scl <= '1';
+				scl <= 'Z';
 				sda <= NOT data_clk;	--stop sequence
 				timer <= 1;
+				busy <= '1';
 				n_state <= IDLE;
 		END CASE;
-				
 	END PROCESS;
 END I2C_M_behav;
 
@@ -143,3 +162,5 @@ END I2C_M_behav;
 -- data_out may change depending on how the displacement will be
 -- returned.
 -- data/out sizes is arbitrary set for now
+
+--count may need to be % 4 instead of +1

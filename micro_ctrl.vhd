@@ -24,41 +24,38 @@ ARCHITECTURE test OF micro_ctrl IS
 				start	: IN STD_LOGIC;
 				wr		: IN STD_LOGIC; 
 				data	: IN regfile;
+				data_len: IN NATURAL RANGE 1 to 16;
 				scl		: OUT STD_LOGIC;
-				sda		: INOUT STD_LOGIC
+				sda		: INOUT STD_LOGIC;
+				busy	: OUT STD_LOGIC
 			);
 	END COMPONENT I2C_Master;
 	
-	TYPE regfile IS ARRAY (0 TO 15) OF STD_LOGIC_VECTOR(7 DOWNTO 0); 
-	--SIGNAL clk : STD_LOGIC := '1';
-	--SIGNAL img : STD_LOGIC_VECTOR := "00000000";
-	--SIGNAL dis : STD_LOGIC_VECTOR := "00000000";
-	SIGNAL i2c_reg		: regfile;
 	SIGNAL i2c_start	: STD_LOGIC := '0';
 	SIGNAL start_wr		: STD_LOGIC := '0';
 	SIGNAL data_in		: regfile;
+	SIGNAL data_len		: NATURAL RANGE 1 to 16;
+	SIGNAL i2c_busy		: STD_LOGIC;
 	
 BEGIN
-	i2c_master : I2C_Master PORT MAP(	clk		=> clk,
-										reset	=> rst,
-										start	=> i2c_start,
-										wr 		=> start_wr,
-										data	=> data_in,
-										scl		=> scl,
-										sda		=> sda
+	i2c_m : I2C_Master PORT MAP( 	clk			=> clk,
+									reset		=> rst,
+									start		=> i2c_start,
+									wr 			=> start_wr,
+									data		=> data_in,
+									data_len	=> data_len,
+									scl			=> scl,
+									sda			=> sda,
+									busy		=> i2c_busy
 									);
-
-	--PROCESS BEGIN
-    --    wait for 100 ns;
-    --    clk <= not clk;
-    --END PROCESS;
 	
-	PROGRAM_ECEXUTION: PROCESS IS
+	PROGRAM_ECEXUTION: PROCESS IS	--contains non-synthesizable code
 	BEGIN
 		WAIT UNTIL rst = '1';
-		i2c_start = '0';
-		FOR idx IN i2c_reg'RANGE LOOP
-			i2c_reg(idx) <= "00000000";
+		i2c_start <= '0';
+		data_len <= 0;
+		FOR idx IN data_in'RANGE LOOP
+			data_in(idx) <= "00000000";
 		END LOOP;
 		WAIT UNTIL rst = '0';
 		
@@ -73,6 +70,8 @@ BEGIN
 		WAIT UNTIL clk = '1';
 		
 		--load ram data into data input for i2c master
+		data_len <= 4;
+		WAIT UNTIL clk = '1';
 		data_in(0) <= ram(0);
 		WAIT UNTIL clk = '1'; 
 		data_in(1) <= ram(1);
@@ -83,11 +82,15 @@ BEGIN
 		WAIT UNTIL clk = '1';
 		
 		--start i2c master
-		i2c_start = '1';
-		start_wr = '1';
-		--handle i2c sending of all data
-		--look for done condition
+		i2c_start <= '1';
+		start_wr <= '1';
+		WAIT UNTIL i2c_busy = '1';	--i2c las left IDLE state and is now writing
+		i2c_start <= '0';
+		start_wr <= '0';
+		WAIT UNTIL i2c_busy = '0';	--i2c finished writing
 		
+		WAIT FOR 1 us;
+		stop(1);	--this stops the testbench here
 		
 	END PROCESS;
 END test;
