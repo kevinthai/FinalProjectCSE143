@@ -16,7 +16,7 @@ ENTITY I2C_Master IS
 			start	: IN STD_LOGIC;
 			wr		: IN STD_LOGIC; 
 			data	: IN regfile;
-			data_len: IN NATURAL RANGE 1 to 16;
+			data_len: IN NATURAL RANGE 0 to 16;
 			scl		: OUT STD_LOGIC;
 			sda		: INOUT STD_LOGIC;
 			busy	: OUT STD_LOGIC 
@@ -28,9 +28,9 @@ ARCHITECTURE I2C_M_behav OF I2C_Master IS
 		--CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
 	CONSTANT divider: INTEGER := 31;
 		--CONSTANT delay: INTEGER := write_time*data_rate;
-	CONSTANT delay: INTEGER := 7
+	CONSTANT delay: INTEGER := 7;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
-	SIGNAL timer: NATURAL RANGE 0 TO delay;
+	SIGNAL timer: NATURAL RANGE 0 TO delay + 1;
 	SIGNAL data_out: regfile;
 	SIGNAL r: NATURAL RANGE 0 to reg_depth-1;
 	SIGNAL ack: STD_LOGIC;
@@ -131,9 +131,9 @@ BEGIN
 			WHEN WRITE_DATA =>
 				scl <= bus_clk;
 				IF (data_out(r)(7-i) = '1') THEN
-					sda = 'Z';
+					sda <= 'Z';
 				ELSE
-					sda = '0';
+					sda <= '0';
 				END IF;
 				busy <= '1';
 				timer <= 8;

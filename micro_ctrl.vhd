@@ -24,7 +24,7 @@ ARCHITECTURE test OF micro_ctrl IS
 				start	: IN STD_LOGIC;
 				wr		: IN STD_LOGIC; 
 				data	: IN regfile;
-				data_len: IN NATURAL RANGE 1 to 16;
+				data_len: IN NATURAL RANGE 0 to 16;
 				scl		: OUT STD_LOGIC;
 				sda		: INOUT STD_LOGIC;
 				busy	: OUT STD_LOGIC
@@ -34,7 +34,7 @@ ARCHITECTURE test OF micro_ctrl IS
 	SIGNAL i2c_start	: STD_LOGIC := '0';
 	SIGNAL start_wr		: STD_LOGIC := '0';
 	SIGNAL data_in		: regfile;
-	SIGNAL data_len		: NATURAL RANGE 1 to 16;
+	SIGNAL data_len		: NATURAL RANGE 0 to 16;
 	SIGNAL i2c_busy		: STD_LOGIC;
 	
 BEGIN
