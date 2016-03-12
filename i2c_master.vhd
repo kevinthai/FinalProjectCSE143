@@ -6,11 +6,11 @@ LIBRARY work;
 use work.reg.ALL;
 
 ENTITY I2C_Master IS
-	GENERIC (
-			clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
-			data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
-			write_time: POSITIVE := 5		-- max write time in ms
-			);
+	--GENERIC (
+	--		clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
+	--		data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
+	--		write_time: POSITIVE := 5		-- max write time in ms
+	--		);
 	PORT (	clk		: IN STD_LOGIC;
 			reset	: IN STD_LOGIC;
 			start	: IN STD_LOGIC;

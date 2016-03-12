@@ -2,40 +2,46 @@ LIBRARY ieee;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_1164.ALL;
 
+LIBRARY work;
+use work.reg.ALL;
+
 ENTITY I2C_Slave IS
-	GENERIC (
-			clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
-			data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
-			write_time: POSITIVE := 5		-- max write time in ms
-			);
+	--GENERIC (
+	--		clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
+	--		data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
+	--		write_time: POSITIVE := 5		-- max write time in ms
+	--		);
 	PORT (	scl		: IN STD_LOGIC;
 			clk		: IN STD_LOGIC;
-			reset	: IN STD_LOGIC
+			reset	: IN STD_LOGIC;
 			rd		: IN STD_LOGIC;
 			sda		: INOUT STD_LOGIC;
-			data	: OUT STD_LOGIC_VECTOR (7 downto 0)
+			data	: OUT regfile
 			);
 END I2C_Slave;
 
 ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	--General constants and signals:
-	CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
-	CONSTANT delay: INTEGER := write_time*data_rate;
+	--CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
+	CONSTANT divider: INTEGER := 31;
+	--CONSTANT delay: INTEGER := write_time*data_rate;
+	CONSTANT delay: INTEGER := 7;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
-	SIGNAL timer: NATURAL RANGE 0 TO delay;
-	SIGNAL data_in: STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL start: STD_LOGIC := '0';	--indicates i2c start condition
-	SIGNAL stop: STD_LOGIC := '0';	--indicates i2c stop condition
+	SIGNAL timer: NATURAL RANGE 0 TO delay + 1;
+	SIGNAL data_in: regfile;
+	SIGNAL r: NATURAL RANGE 0 to reg_depth-1;
+	SIGNAL i: NATURAL RANGE 0 TO delay;
 	
 	--scl signals delayed by 1 clock cycle and 2 clock cycles
 	SIGNAL scl_reg: STD_LOGIC := '1';
 	SIGNAL scl_prev_reg: STD_LOGIC := '1';
-	
 	--sda signals delayed by 1 clock cycle and 2 clock cycles
 	SIGNAL sda_reg: STD_LOGIC := '1';
 	SIGNAL sda_prev_reg: STD_LOGIC := '1';
+	--indicate i2c start and stop conditions
+	SIGNAL start: STD_LOGIC := '0';
+	SIGNAL stop: STD_LOGIC := '0';
 	
-	SIGNAL i: NATURAL RANGE 0 TO delay;
 	--State machine signals:
 	TYPE state IS (IDLE, ACK, RECEIVE_DATA);
 	SIGNAL p_state, n_state: state; --present/next states
@@ -43,10 +49,13 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 BEGIN
 	data <= data_in;
 	----------------Auxiliary clock:----------------
-	PROCESS (clk)
+	ACLK: PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
 	BEGIN
-		IF (clk'EVENT AND clk='1') THEN
+		IF (reset = '1') THEN
+			aux_clk <= '0';
+			count := 0;
+		ELSIF (clk'EVENT AND clk='1') THEN
 			count := count + 1;
 			IF(count = divider) THEN
 				aux_clk <= NOT aux_clk;
@@ -56,10 +65,14 @@ BEGIN
 	END PROCESS;
 	
 	----------------Bus and Data clocks:----------------
-	PROCESS (aux_clk)
+	D_B_CLKS: PROCESS (aux_clk)
 		VARIABLE count: INTEGER RANGE 0 TO 3;
 	BEGIN
-		IF (aux_clk'EVENT AND aux_clk='1') THEN
+		IF (reset = '1') THEN
+			count := 0;
+			bus_clk <= '0';
+			data_clk <= '0';
+		ELSIF (aux_clk'EVENT AND aux_clk='1') THEN
 			count := count + 1;
 			IF (count = 0) THEN
 				bus_clk <= '0';
@@ -69,6 +82,7 @@ BEGIN
 				bus_clk <= '1';
 			ELSE
 				data_clk <= '0';
+				count := 0;
 			END IF;
 		END IF;
 	END PROCESS;

@@ -11,6 +11,7 @@ use work.reg.ALL;
 ENTITY micro_ctrl IS
 	PORT(	clk: IN STD_LOGIC;
 			rst: IN STD_LOGIC;
+			int: IN STD_LOGIC; --interrupt line; is high when matrix mult is done
 			ram: INOUT ram_type;
 			sda: INOUT std_logic;
 			scl: OUT STD_LOGIC
