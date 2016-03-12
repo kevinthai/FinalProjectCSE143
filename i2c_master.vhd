@@ -65,13 +65,15 @@ BEGIN
 			bus_clk <= '0';
 			data_clk <= '0';
 		ELSIF (aux_clk'EVENT AND aux_clk='1') THEN
-			count := count + 1;
 			IF (count = 0) THEN
 				bus_clk <= '0';
+				count := count + 1;
 			ELSIF (count = 1) THEN
 				data_clk <= '1';
+				count := count + 1;
 			ELSIF (count = 2) THEN
 				bus_clk <= '1';
+				count := count + 1;
 			ELSE
 				data_clk <= '0';
 				count := 0;
@@ -109,7 +111,7 @@ BEGIN
 	END PROCESS;
 	
 	----------------Combinational section of FSM----------------
-	PROCESS (p_state, bus_clk, data_clk, wr, data_out, sda)
+	PROCESS (p_state, bus_clk, data_clk, start, wr, data_out, sda)
 	BEGIN
 		CASE p_state IS
 			WHEN IDLE =>

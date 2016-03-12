@@ -22,15 +22,17 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	COMPONENT I2C_Slave IS
 		PORT(	scl		: IN STD_LOGIC;
 				clk		: IN STD_LOGIC;
-				reset	: IN STD_LOGIC
+				reset	: IN STD_LOGIC;
 				rd		: IN STD_LOGIC;
 				sda		: INOUT STD_LOGIC;
-				data	: OUT STD_LOGIC_VECTOR(7 downto 0)
+				data	: OUT regfile;
+				busy	: OUT STD_LOGIC
 			);
 	END COMPONENT I2C_Slave; 
 	
-	SIGNAL start_rd		: STD_LOGIC = '0';
-	SIGNAL data_out		: STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL start_rd		: STD_LOGIC := '0';
+	SIGNAL data_out		: regfile;
+	SIGNAL i2c_busy		: STD_LOGIC;
 			
 BEGIN
 	
@@ -39,7 +41,8 @@ BEGIN
 								reset	=> rst,
 								rd		=> start_rd,
 								sda		=> sda,
-								data	=> data_out
+								data	=> data_out,
+								busy	=> i2c_busy
 								); 
 	
 
