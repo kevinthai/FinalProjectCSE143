@@ -143,6 +143,7 @@ BEGIN
 					END IF;
 					n_state <= ACK1;
 				END IF;
+				sda <= 'Z'; --prevents inferred latch; allows master to exert stop condition
 				busy <= '1'; --i2c is busy
 			WHEN ACK1 =>
 				sda <= '0'; --send acknowledgement to master
