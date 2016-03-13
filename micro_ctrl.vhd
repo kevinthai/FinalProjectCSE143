@@ -39,18 +39,18 @@ ARCHITECTURE test OF micro_ctrl IS
 	SIGNAL i2c_busy		: STD_LOGIC;
 	
 BEGIN
-	i2c_m : I2C_Master PORT MAP( 	clk			=> clk,
-									reset		=> rst,
-									start		=> i2c_start,
-									wr 			=> start_wr,
-									data		=> data_in,
-									data_len	=> data_len,
-									scl			=> scl,
-									sda			=> sda,
-									busy		=> i2c_busy
-									);
+	i2c_m : I2C_Master PORT MAP(clk			=> clk,
+								reset		=> rst,
+								start		=> i2c_start,
+								wr 			=> start_wr,
+								data		=> data_in,
+								data_len	=> data_len,
+								scl			=> scl,
+								sda			=> sda,
+								busy		=> i2c_busy
+								);
 	
-	PROGRAM_ECEXUTION: PROCESS IS	--contains non-synthesizable code
+	PROGRAM_EXECUTION: PROCESS IS	--contains non-synthesizable code
 	BEGIN
 		WAIT UNTIL rst = '1';
 		i2c_start <= '0';
