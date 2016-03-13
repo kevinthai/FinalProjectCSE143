@@ -40,12 +40,15 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	SIGNAL sda_reg: STD_LOGIC := '1';
 	SIGNAL sda_prev_reg: STD_LOGIC := '1';
 	
+	SIGNAL sda_testing: STD_LOGIC;
+	
 	--State machine signals:
 	TYPE state IS (IDLE, ACK1, RECEIVE_DATA);
 	SIGNAL p_state, n_state: state; --present/next states
 
 BEGIN
 	data <= data_in;
+	sda_testing <= sda;
 	----------------Auxiliary clock:----------------
 	ACLK: PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
@@ -118,7 +121,7 @@ BEGIN
 	END PROCESS;
 	
 	----------------Combinational section of FSM----------------
-	PROCESS (p_state, sda, scl_prev_reg, scl_reg, sda_prev_reg, sda_reg)
+	PROCESS (p_state, sda, scl_prev_reg, scl_reg, sda_prev_reg, sda_reg, i)
 	BEGIN
 		CASE p_state IS
 			WHEN IDLE =>
@@ -139,7 +142,11 @@ BEGIN
 				ELSE
 					timer <= 8;
 					IF (r < reg_depth) THEN	--prevent array index out of bounds exception
-						data_in(r)(7-i) <= sda;
+						IF ((sda = 'H') OR (SDA = '1')) THEN
+							data_in(r)(7-i) <= '1';
+						ELSE
+							data_in(r)(7-i) <= '0';
+						END IF;
 					END IF;
 					n_state <= ACK1;
 				END IF;

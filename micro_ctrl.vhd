@@ -73,13 +73,17 @@ BEGIN
 		--load ram data into data input for i2c master
 		data_len <= 4;
 		WAIT UNTIL clk = '1';
-		data_in(0) <= ram(0);
+		--data_in(0) <= ram(0);
+		data_in(0) <= "00110100";
 		WAIT UNTIL clk = '1'; 
-		data_in(1) <= ram(1);
+		--data_in(1) <= ram(1);
+		data_in(1) <= "10011010";
 		WAIT UNTIL clk = '1';
-		data_in(2) <= ram(2);
+		--data_in(2) <= ram(2);
+		data_in(2) <= "00010011";
 		WAIT UNTIL clk = '1';
-		data_in(3) <= ram(3);
+		--data_in(3) <= ram(3);
+		data_in(3) <= "11100010";
 		WAIT UNTIL clk = '1';
 		
 		--start i2c master
