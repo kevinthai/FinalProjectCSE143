@@ -1,3 +1,16 @@
+--
+-- Sandro Yu	A10812022
+-- Kevin Thai	A10716130
+-- 
+-- 			Final Hardware Design Project
+-- 
+-- File Name: reg.vhd
+-- Description:	The following program defines a regfile to 
+-- 		be used as registers passed to and from the I2C
+-- 		master and slave. These registers contain the
+--		data to be transfered. 
+-- 
+
 library ieee;
 use ieee.std_logic_1164.all;
 package reg is

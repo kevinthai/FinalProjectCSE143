@@ -1,3 +1,17 @@
+--
+-- Sandro Yu	A10812022
+-- Kevin Thai	A10716130
+-- 
+-- 			Final Hardware Design Project
+-- 
+-- File Name: micro_ctrl.vhd
+-- Description: The following program contains the micro controller 
+-- 		module that will be instantiated within the top level. 
+-- 		This processor runs like a procesor (similar to top) and
+--		initiates the call to the co processor to start matrix
+--		multiplication. 
+-- 
+
 LIBRARY ieee;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -5,14 +19,16 @@ use std.textio.ALL;
 use std.env.ALL;
 
 LIBRARY work;
-use work.ram.ALL;
 use work.reg.ALL;
 
 ENTITY micro_ctrl IS
 	PORT(	clk: IN STD_LOGIC;
 			rst: IN STD_LOGIC;
 			int: IN STD_LOGIC; --interrupt line; is high when matrix mult is done
-			ram: INOUT ram_type;
+			we	:OUT STD_LOGIC;
+			addr:OUT STD_LOGIC_VECTOR(22 DOWNTO 0);
+			d_in:IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+			d_out:OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
 			sda: INOUT std_logic;
 			scl: OUT STD_LOGIC
 		);
@@ -58,31 +74,21 @@ BEGIN
 		FOR idx IN data_in'RANGE LOOP
 			data_in(idx) <= "00000000";
 		END LOOP;
+		addr <= "ZZZZZZZZZZZZZZZZZZZZZZZ";
+		d_out <= "ZZZZZZZZ";
+		we <= 'Z';
 		WAIT UNTIL rst = '0';
 		
-		--load ram
-		ram(0) <= "00110100";
-		WAIT UNTIL clk = '1';
-		ram(1) <= "10011010";
-		WAIT UNTIL clk = '1';
-		ram(2) <= "00010011";
-		WAIT UNTIL clk = '1';
-		ram(3) <= "11100010";
-		WAIT UNTIL clk = '1';
 		
-		--load ram data into data input for i2c master
+		--load data into data input for i2c master
 		data_len <= 4;
 		WAIT UNTIL clk = '1';
-		--data_in(0) <= ram(0);
 		data_in(0) <= "00110100";
 		WAIT UNTIL clk = '1'; 
-		--data_in(1) <= ram(1);
 		data_in(1) <= "10011010";
 		WAIT UNTIL clk = '1';
-		--data_in(2) <= ram(2);
 		data_in(2) <= "00010011";
 		WAIT UNTIL clk = '1';
-		--data_in(3) <= ram(3);
 		data_in(3) <= "11100010";
 		WAIT UNTIL clk = '1';
 		

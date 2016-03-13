@@ -1,3 +1,15 @@
+--
+-- Sandro Yu	A10812022
+-- Kevin Thai	A10716130
+-- 
+-- 			Final Hardware Design Project
+-- 
+-- File Name: i2c_master.vhd
+-- Description:	The following program defines the I2C master module,
+-- 		which will be instantiated within the micro controller.
+-- 		This entity will write data to its slave counterpart.
+-- 
+
 LIBRARY ieee;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -6,11 +18,6 @@ LIBRARY work;
 use work.reg.ALL;
 
 ENTITY I2C_Master IS
-	--GENERIC (
-	--		clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
-	--		data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
-	--		write_time: POSITIVE := 5		-- max write time in ms
-	--		);
 	PORT (	clk		: IN STD_LOGIC;
 			reset	: IN STD_LOGIC;
 			start	: IN STD_LOGIC;
@@ -25,9 +32,7 @@ END I2C_Master;
 
 ARCHITECTURE I2C_M_behav OF I2C_Master IS
 	--General constants and signals:
-		--CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
 	CONSTANT divider: INTEGER := 31;
-		--CONSTANT delay: INTEGER := write_time*data_rate;
 	CONSTANT delay: INTEGER := 7;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay + 1;
@@ -159,10 +164,3 @@ BEGIN
 		END CASE;
 	END PROCESS;
 END I2C_M_behav;
-
--- data_in may change depending on how the images will be sent.
--- data_out may change depending on how the displacement will be
--- returned.
--- data/out sizes is arbitrary set for now
-
---count may need to be % 4 instead of +1

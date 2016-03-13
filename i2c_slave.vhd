@@ -1,3 +1,16 @@
+--
+-- Sandro Yu	A10812022
+-- Kevin Thai	A10716130
+-- 
+-- 			Final Hardware Design Project
+-- 
+-- File Name: i2c_slave.vhd
+-- Description: The following program defines the I2C slave module,
+-- 		which will be instantiated within the co processor.
+-- 		This entity will receive data sent from its master 
+-- 		counterpart.
+-- 
+
 LIBRARY ieee;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -6,26 +19,20 @@ LIBRARY work;
 use work.reg.ALL;
 
 ENTITY I2C_Slave IS
-	--GENERIC (
-	--		clkFreq: POSITIVE := 50_000;	-- Frequency of system clock in kHz
-	--		data_rate: POSITIVE := 100;		-- Desired I2C bus speed in kbps
-	--		write_time: POSITIVE := 5		-- max write time in ms
-	--		);
 	PORT (	scl		: IN STD_LOGIC;
 			clk		: IN STD_LOGIC;
 			reset	: IN STD_LOGIC;
 			rd		: IN STD_LOGIC;
 			sda		: INOUT STD_LOGIC;
 			data	: OUT regfile;
-			busy	: OUT STD_LOGIC
+			busy	: OUT STD_LOGIC;
+			start	: OUT STD_LOGIC
 			);
 END I2C_Slave;
 
 ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	--General constants and signals:
-	--CONSTANT divider: INTEGER := (clkFreq/8)/data_rate;
 	CONSTANT divider: INTEGER := 31;
-	--CONSTANT delay: INTEGER := write_time*data_rate;
 	CONSTANT delay: INTEGER := 7;
 	SIGNAL aux_clk, bus_clk, data_clk: STD_LOGIC;
 	SIGNAL timer: NATURAL RANGE 0 TO delay + 1;
@@ -98,6 +105,7 @@ BEGIN
 			p_state <= IDLE;
 			i <= 0;
 			r <= 0;
+			start <= '0';
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
 			IF (i = timer - 1) THEN
 				p_state <= n_state;
@@ -131,6 +139,7 @@ BEGIN
 				IF ((scl_prev_reg = 'H') AND (scl_reg = 'H') AND 
 				(sda_prev_reg = '1') AND (sda_reg = '0')) THEN
 					n_state <= RECEIVE_DATA;	--start condition detected
+					start <= '0';
 				ELSE
 					n_state <= IDLE;
 				END IF;
@@ -139,6 +148,7 @@ BEGIN
 				(sda_prev_reg = '0') AND (sda_reg = '1')) THEN
 					n_state <= IDLE;	--stop condition detected
 					timer <= 1;
+					start <= '1';
 				ELSE
 					timer <= 8;
 					IF (r < reg_depth) THEN	--prevent array index out of bounds exception
@@ -161,8 +171,3 @@ BEGIN
 		
 	END PROCESS;
 END I2C_S_behav;
-
--- data_out may change depending on how the images will be sent.
--- data_in may change depending on how the displacement will be
--- returned.
--- data_in/out sizes is arbitrary set for now
