@@ -42,14 +42,14 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 				rd		: IN STD_LOGIC;
 				sda		: INOUT STD_LOGIC;
 				data	: OUT regfile;
-				busy	: OUT STD_LOGIC;
-				start	: OUT STD_LOGIC
+				busy	: OUT STD_LOGIC
 			);
 	END COMPONENT I2C_Slave; 
 	
 	SIGNAL start_rd		: STD_LOGIC := '0';
 	SIGNAL data_out		: regfile;
 	SIGNAL i2c_busy		: STD_LOGIC;
+<<<<<<< HEAD
 	SIGNAL start_mult	: STD_LOGIC; --Signal is high when slave has received all data
 	-- storage for matrix A, B, and R. capable of storing up to 1080x1920 matrices
 	type matrixA is array (0 to 2**21) of std_logic_vector(7 downto 0);
@@ -57,6 +57,8 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	type matrixC is array (0 to 2**21) of std_logic_vector(7 downto 0);
 	
 	
+=======
+>>>>>>> origin/master
 			
 BEGIN
 	
@@ -66,8 +68,7 @@ BEGIN
 								rd		=> start_rd,
 								sda		=> sda,
 								data	=> data_out,
-								busy	=> i2c_busy,
-								start	=> start_mult
+								busy	=> i2c_busy
 								); 
 	
 	

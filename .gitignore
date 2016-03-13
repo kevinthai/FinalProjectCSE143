@@ -2,3 +2,4 @@
 .nfs000000000*
 transcript
 vsim.wlf
+vsim_stacktrace.vstf

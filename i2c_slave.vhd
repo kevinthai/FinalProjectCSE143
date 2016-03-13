@@ -25,8 +25,7 @@ ENTITY I2C_Slave IS
 			rd		: IN STD_LOGIC;
 			sda		: INOUT STD_LOGIC;
 			data	: OUT regfile;
-			busy	: OUT STD_LOGIC;
-			start	: OUT STD_LOGIC
+			busy	: OUT STD_LOGIC
 			);
 END I2C_Slave;
 
@@ -46,16 +45,13 @@ ARCHITECTURE I2C_S_behav OF I2C_Slave IS
 	--sda signals delayed by 1 clock cycle and 2 clock cycles
 	SIGNAL sda_reg: STD_LOGIC := '1';
 	SIGNAL sda_prev_reg: STD_LOGIC := '1';
-	
-	SIGNAL sda_testing: STD_LOGIC;
-	
+		
 	--State machine signals:
 	TYPE state IS (IDLE, ACK1, RECEIVE_DATA);
 	SIGNAL p_state, n_state: state; --present/next states
 
 BEGIN
 	data <= data_in;
-	sda_testing <= sda;
 	----------------Auxiliary clock:----------------
 	ACLK: PROCESS (clk)
 		VARIABLE count: INTEGER RANGE 0 TO divider;
@@ -105,7 +101,6 @@ BEGIN
 			p_state <= IDLE;
 			i <= 0;
 			r <= 0;
-			start <= '0';
 		ELSIF (data_clk'EVENT AND data_clk='1') THEN
 			IF (i = timer - 1) THEN
 				p_state <= n_state;
@@ -139,7 +134,6 @@ BEGIN
 				IF ((scl_prev_reg = 'H') AND (scl_reg = 'H') AND 
 				(sda_prev_reg = '1') AND (sda_reg = '0')) THEN
 					n_state <= RECEIVE_DATA;	--start condition detected
-					start <= '0';
 				ELSE
 					n_state <= IDLE;
 				END IF;
@@ -148,7 +142,6 @@ BEGIN
 				(sda_prev_reg = '0') AND (sda_reg = '1')) THEN
 					n_state <= IDLE;	--stop condition detected
 					timer <= 1;
-					start <= '1';
 				ELSE
 					timer <= 8;
 					IF (r < reg_depth) THEN	--prevent array index out of bounds exception
