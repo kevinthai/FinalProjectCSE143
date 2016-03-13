@@ -94,7 +94,7 @@ BEGIN
 			IF (i = timer - 1) THEN
 				p_state <= n_state;
 				i <= 0;
-				IF (p_state = ACK1) THEN
+				IF ((p_state = ACK1) AND (r < (reg_depth-1))) THEN
 					r <= r + 1; --write the next byte
 				ELSIF (p_state = IDLE) THEN
 					r <= 0;

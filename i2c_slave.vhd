@@ -125,14 +125,14 @@ BEGIN
 				sda <= 'Z';
 				timer <= 1; 
 				busy <= '0'; --i2c is not busy
-				IF ((scl_prev_reg = '1') AND (scl_reg = '1') AND 
+				IF ((scl_prev_reg = 'H') AND (scl_reg = 'H') AND 
 				(sda_prev_reg = '1') AND (sda_reg = '0')) THEN
 					n_state <= RECEIVE_DATA;	--start condition detected
 				ELSE
 					n_state <= IDLE;
 				END IF;
 			WHEN RECEIVE_DATA =>
-				IF ((scl_prev_reg = '1') AND (scl_reg = '1') AND 
+				IF ((scl_prev_reg = 'H') AND (scl_reg = 'H') AND 
 				(sda_prev_reg = '0') AND (sda_reg = '1')) THEN
 					n_state <= IDLE;	--stop condition detected
 					timer <= 1;
