@@ -51,6 +51,12 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	SIGNAL data_out		: regfile;
 	SIGNAL i2c_busy		: STD_LOGIC;
 	SIGNAL start_mult	: STD_LOGIC; --Signal is high when slave has received all data
+	-- storage for matrix A, B, and R. capable of storing up to 1080x1920 matrices
+	type matrixA is array (0 to 2**21) of std_logic_vector(7 downto 0);
+	type matrixB is array (0 to 2**21) of std_logic_vector(7 downto 0);
+	type matrixC is array (0 to 2**21) of std_logic_vector(7 downto 0);
+	
+	
 			
 BEGIN
 	
@@ -71,7 +77,9 @@ BEGIN
 		  addr <= "ZZZZZZZZZZZZZZZZZZZZZZZ";
 		  d_out <= "ZZZZZZZZ";
 		  we <= 'Z';
+		  
 		END IF;
+		
 	END PROCESS;
 
 END co_proc_behav;
