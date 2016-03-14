@@ -67,7 +67,8 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	SIGNAL	i, 
 			j,
 			k,
-			x		: integer;
+			x,
+			y			: integer;
 			
 BEGIN
 	
@@ -105,40 +106,40 @@ BEGIN
 			-- dectects when i2c has finished transfering data and starts multiplier
 			IF i2c_busy'EVENT and i2c_busy='0' THEN
 				n_state <= LOADA;
-				i <= 0;
+				x <= 0;
 				we <= '0';
 				addr <= addrA;
 			-- loads matrix A
 			ELSIF p_state=LOADA THEN
 				-- start loading matrix B
-				IF i=(1080*1920 - 1) THEN
-					i <= 0;
+				IF x=(1080*1920 - 1) THEN
+					x <= 0;
 					n_state <= LOADB;
 					addr <= addrB;
 				ELSE
-					addr <= std_logic_vector( unsigned(addrA) + i + 1);
-					i <= i + 1;
+					addr <= std_logic_vector( unsigned(addrA) + x + 1);
+					x <= x + 1;
 				END IF;
 			-- loads matrix B
 			ELSIF p_state=LOADB THEN
 				-- start calculation process
-				IF i=(1920*to_integer(unsigned(p))-1) THEN
-					i <= 0;
+				IF x=(1920*to_integer(unsigned(p))-1) THEN
+					x <= 0;
 					n_state <= CALC1;
 				ELSE
-					addr <= std_logic_vector( unsigned(addrB) + i + 1);
-					i <= i + 1; 
+					addr <= std_logic_vector( unsigned(addrB) + x + 1);
+					x <= x + 1; 
 				END IF;
 			-- calculates column k of matrix R
 			ELSIF p_state=CALC1 THEN
 				n_state <= STORER;
 			ELSIF p_state=STORER THEN
-				addr <= std_logic_vector( unsigned(addrR) + i);
-				IF i=(1080*to_integer(unsigned(p))-1) THEN
-					i <= 0;
+				addr <= std_logic_vector( unsigned(addrR) + x);
+				IF x=(1080*to_integer(unsigned(p))-1) THEN
+					x <= 0;
 					n_state <= CALC1;
 				ELSE
-					i <= i + 1;
+					x <= x + 1;
 				END IF;
 			ELSIF p_state <= DONE THEN
 				n_state <= IDLE;
@@ -153,27 +154,27 @@ BEGIN
 		CASE p_state IS
 			WHEN IDLE =>
 				int <= '0';
-				x <= 0;
+				xy <= 0;
 			WHEN LOADA =>
-				matrixA(x) <= d_in;
-				IF x=1080*1920 - 1 THEN
-					x <= 0;
+				matrixA(y) <= d_in;
+				IF y=1080*1920 - 1 THEN
+					y <= 0;
 				ELSE 
-					x <= x + 1;
+					y <= y + 1;
 				END IF;
 			WHEN LOADB =>
-				matrixB(x) <= d_in;
-				IF x=1920*to_integer(unsigned(p))-1 THEN
-					x <= 0;
+				matrixB(y) <= d_in;
+				IF y=1920*to_integer(unsigned(p))-1 THEN
+					y <= 0;
 				ELSE
-					x <= x + 1;
+					y <= y + 1;
 				END IF;
 			WHEN CALC1 =>
-				int <= '0';
+				FOR 
 			WHEN CALC2 =>
 				int <= '0';
 			WHEN STORER =>
-				d_out <= "00000000";
+				d_out <= matrixR(x)
 			WHEN DONE =>
 				int <= '1';
 		END CASE;
