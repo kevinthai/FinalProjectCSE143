@@ -54,7 +54,7 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	type matrix is array (0 to 2**21) of std_logic_vector(7 downto 0);
 	SIGNAL 	matrixA,
 			matrixB,
-			matrixC		: matrix;		
+			matrixR		: matrix;		
 	TYPE state IS (IDLE, LOADA, LOADB, CALC1, CALC2, STORER, DONE);
 	SIGNAL 	p_state,
 			n_state		: state;
@@ -154,7 +154,7 @@ BEGIN
 		CASE p_state IS
 			WHEN IDLE =>
 				int <= '0';
-				xy <= 0;
+				y <= 0;
 			WHEN LOADA =>
 				matrixA(y) <= d_in;
 				IF y=1080*1920 - 1 THEN
@@ -170,11 +170,11 @@ BEGIN
 					y <= y + 1;
 				END IF;
 			WHEN CALC1 =>
-				FOR 
+				int <= '0';
 			WHEN CALC2 =>
 				int <= '0';
 			WHEN STORER =>
-				d_out <= matrixR(x)
+				d_out <= matrixR(x);
 			WHEN DONE =>
 				int <= '1';
 		END CASE;
