@@ -79,17 +79,16 @@ BEGIN
 		we <= 'Z';
 		WAIT UNTIL rst = '0';
 		
-		
 		--load data into data input for i2c master
 		data_len <= 4;
 		WAIT UNTIL clk = '1';
-		data_in(0) <= "00110100";
+		data_in(0) <= "00000000";
 		WAIT UNTIL clk = '1'; 
-		data_in(1) <= "10011010";
+		data_in(1) <= "01000000";
 		WAIT UNTIL clk = '1';
-		data_in(2) <= "00010011";
+		data_in(2) <= "10000000";
 		WAIT UNTIL clk = '1';
-		data_in(3) <= "11100010";
+		data_in(3) <= "00000011";
 		WAIT UNTIL clk = '1';
 		
 		--start i2c master
