@@ -49,6 +49,26 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	SIGNAL start_rd		: STD_LOGIC := '0';
 	SIGNAL data_out		: regfile;
 	SIGNAL i2c_busy		: STD_LOGIC;
+	SIGNAL start_mult	: STD_LOGIC; --Signal is high when slave has received all data
+	-- storage for matrix A, B, and R. capable of storing up to 1080x1920 matrices
+	type matrix is array (0 to 2**21) of std_logic_vector(7 downto 0);
+	SIGNAL 	matrixA,
+			matrixB,
+			matrixR		: matrix;		
+	TYPE state IS (IDLE, LOADA, LOADB, CALC, STORER, DONE);
+	SIGNAL 	p_state,
+			n_state		: state;
+	SIGNAL 	addrA		: STD_LOGIC_VECTOR(22 downto 0);
+	SIGNAL	addrB		: STD_LOGIC_VECTOR(22 downto 0);
+	SIGNAL	addrR		: STD_LOGIC_VECTOR(22 downto 0);
+	-- matrix dimension counters, max value for i, j, k are 1080, 1920, p
+	-- x and y are for loading/storing matrix where max value is number of elements
+	SIGNAL	i, 
+			j,
+			k,
+			x,
+			y,
+			p		: integer;
 			
 BEGIN
 	
@@ -61,14 +81,117 @@ BEGIN
 								busy	=> i2c_busy
 								); 
 	
+	-- arguements for multiplier
+	addrA <= data_out(0) & "000000000000000";	-- address of matrix A
+	addrB <= data_out(1) & "000000000000000";	-- address of matrix B
+	addrR <= data_out(2) & "000000000000000";	-- address to store resulting matrix
+	p <= to_integer(unsigned(data_out(3)));		-- p value of matrix B
 	
+	-- SEQUENTIAL section of FSM
 	CO_PROC_CNTRL: PROCESS(clk, rst) IS
 	BEGIN
+		p_state <= n_state;
+		--resets the multiplier
 		IF rst'EVENT and rst='1' THEN
 		  addr <= "ZZZZZZZZZZZZZZZZZZZZZZZ";
 		  d_out <= "ZZZZZZZZ";
 		  we <= 'Z';
+		  we <= '0';
+		  -- switches to idle state
+		  n_state <= IDLE;
+		ELSIF clk'EVENT and clk='1' THEN
+			-- dectects when i2c has finished transfering data and starts multiplier
+			IF i2c_busy'EVENT and i2c_busy='0' THEN
+				n_state <= LOADA;
+				x <= 1;
+				we <= '0';
+				addr <= addrA;
+			-- loads matrix A
+			ELSIF p_state=LOADA THEN
+				-- start loading matrix B
+				IF x=(1080*1920) THEN
+					x <= 1;
+					n_state <= LOADB;
+					addr <= addrB;
+				ELSE
+					addr <= std_logic_vector( unsigned(addrA) + x);
+					x <= x + 1;
+				END IF;
+			-- loads matrix B
+			ELSIF p_state=LOADB THEN
+				-- start calculation process
+				IF x=(1920*p) THEN
+					x <= 0;
+					n_state <= CALC;
+				ELSE
+					addr <= std_logic_vector( unsigned(addrB) + x);
+					x <= x + 1; 
+				END IF;
+			-- calculates column k of matrix R
+			ELSIF p_state=CALC THEN
+				IF k=p-1 and j=1919 THEN
+					n_state <= STORER;
+				ELSE
+					n_state <= CALC;
+				END IF;
+			ELSIF p_state=STORER THEN
+				addr <= std_logic_vector( unsigned(addrR) + x);
+				IF x=(1080*p-1) THEN
+					x <= 0;
+					n_state <= DONE;
+				ELSE
+					x <= x + 1;
+				END IF;
+			ELSIF p_state <= DONE THEN
+				n_state <= IDLE;
+			END IF;
 		END IF;
+		
+	END PROCESS;
+	
+	-- COMBINATIONAL section of FSM
+	PROCESS(p_state, d_in) 
+	BEGIN
+		CASE p_state IS
+			WHEN IDLE =>
+				int <= '0';
+				y <= 0;
+				i <= 0;
+				j <= 0;
+				k <= 0;
+				FOR i in 0 to 2**21 LOOP
+					matrixR(i) <= "00000000";
+				END LOOP;
+			WHEN LOADA =>
+				matrixA(y) <= d_in;
+				IF y=1080*1920 - 1 THEN
+					y <= 0;
+				ELSE 
+					y <= y + 1;
+				END IF;
+			WHEN LOADB =>
+				matrixB(y) <= d_in;
+				IF y=1920*p-1 THEN
+					y <= 0;
+				ELSE
+					y <= y + 1;
+				END IF;
+			WHEN CALC =>
+				FOR i in 0 to 1079 LOOP
+					matrixR(i+(k*1080)) <= std_logic_vector(unsigned(matrixR(i+(k*1080))) + unsigned(matrixA(i+(j*1080)))*unsigned(matrixB(j+(p*1920))));
+				END LOOP;		
+				
+				IF j=1919 THEN
+					j <= 0;
+					k <= k + 1;
+				ELSE
+					j <= j + 1;
+				END IF;
+			WHEN STORER =>
+				d_out <= matrixR(x);
+			WHEN DONE =>
+				int <= '1';
+		END CASE;
 	END PROCESS;
 
 END co_proc_behav;
