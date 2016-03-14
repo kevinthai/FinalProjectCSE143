@@ -55,20 +55,20 @@ ARCHITECTURE co_proc_behav OF co_proc IS
 	SIGNAL 	matrixA,
 			matrixB,
 			matrixR		: matrix;		
-	TYPE state IS (IDLE, LOADA, LOADB, CALC1, CALC2, STORER, DONE);
+	TYPE state IS (IDLE, LOADA, LOADB, CALC, STORER, DONE);
 	SIGNAL 	p_state,
 			n_state		: state;
 	SIGNAL 	addrA		: STD_LOGIC_VECTOR(22 downto 0);
 	SIGNAL	addrB		: STD_LOGIC_VECTOR(22 downto 0);
 	SIGNAL	addrR		: STD_LOGIC_VECTOR(22 downto 0);
-	SIGNAL	p			: STD_LOGIC_VECTOR(7 downto 0);
 	-- matrix dimension counters, max value for i, j, k are 1080, 1920, p
 	-- x and y are for loading/storing matrix where max value is number of elements
 	SIGNAL	i, 
 			j,
 			k,
 			x,
-			y			: integer;
+			y,
+			p		: integer;
 			
 BEGIN
 	
@@ -85,7 +85,7 @@ BEGIN
 	addrA <= data_out(0) & "000000000000000";	-- address of matrix A
 	addrB <= data_out(1) & "000000000000000";	-- address of matrix B
 	addrR <= data_out(2) & "000000000000000";	-- address to store resulting matrix
-	p <= data_out(3);		-- p value of matrix B
+	p <= to_integer(unsigned(data_out(3)));		-- p value of matrix B
 	
 	-- SEQUENTIAL section of FSM
 	CO_PROC_CNTRL: PROCESS(clk, rst) IS
@@ -96,9 +96,6 @@ BEGIN
 		  addr <= "ZZZZZZZZZZZZZZZZZZZZZZZ";
 		  d_out <= "ZZZZZZZZ";
 		  we <= 'Z';
-		  i <= 0;
-		  j <= 0;
-		  k <= 0;
 		  we <= '0';
 		  -- switches to idle state
 		  n_state <= IDLE;
@@ -106,38 +103,42 @@ BEGIN
 			-- dectects when i2c has finished transfering data and starts multiplier
 			IF i2c_busy'EVENT and i2c_busy='0' THEN
 				n_state <= LOADA;
-				x <= 0;
+				x <= 1;
 				we <= '0';
 				addr <= addrA;
 			-- loads matrix A
 			ELSIF p_state=LOADA THEN
 				-- start loading matrix B
-				IF x=(1080*1920 - 1) THEN
-					x <= 0;
+				IF x=(1080*1920) THEN
+					x <= 1;
 					n_state <= LOADB;
 					addr <= addrB;
 				ELSE
-					addr <= std_logic_vector( unsigned(addrA) + x + 1);
+					addr <= std_logic_vector( unsigned(addrA) + x);
 					x <= x + 1;
 				END IF;
 			-- loads matrix B
 			ELSIF p_state=LOADB THEN
 				-- start calculation process
-				IF x=(1920*to_integer(unsigned(p))-1) THEN
+				IF x=(1920*p) THEN
 					x <= 0;
-					n_state <= CALC1;
+					n_state <= CALC;
 				ELSE
-					addr <= std_logic_vector( unsigned(addrB) + x + 1);
+					addr <= std_logic_vector( unsigned(addrB) + x);
 					x <= x + 1; 
 				END IF;
 			-- calculates column k of matrix R
-			ELSIF p_state=CALC1 THEN
-				n_state <= STORER;
+			ELSIF p_state=CALC THEN
+				IF k=p-1 and j=1919 THEN
+					n_state <= STORER;
+				ELSE
+					n_state <= CALC;
+				END IF;
 			ELSIF p_state=STORER THEN
 				addr <= std_logic_vector( unsigned(addrR) + x);
-				IF x=(1080*to_integer(unsigned(p))-1) THEN
+				IF x=(1080*p-1) THEN
 					x <= 0;
-					n_state <= CALC1;
+					n_state <= DONE;
 				ELSE
 					x <= x + 1;
 				END IF;
@@ -155,6 +156,12 @@ BEGIN
 			WHEN IDLE =>
 				int <= '0';
 				y <= 0;
+				i <= 0;
+				j <= 0;
+				k <= 0;
+				FOR i in 0 to 2**21 LOOP
+					matrixR(i) <= "00000000";
+				END LOOP;
 			WHEN LOADA =>
 				matrixA(y) <= d_in;
 				IF y=1080*1920 - 1 THEN
@@ -164,15 +171,22 @@ BEGIN
 				END IF;
 			WHEN LOADB =>
 				matrixB(y) <= d_in;
-				IF y=1920*to_integer(unsigned(p))-1 THEN
+				IF y=1920*p-1 THEN
 					y <= 0;
 				ELSE
 					y <= y + 1;
 				END IF;
-			WHEN CALC1 =>
-				int <= '0';
-			WHEN CALC2 =>
-				int <= '0';
+			WHEN CALC =>
+				FOR i in 0 to 1079 LOOP
+					matrixR(i+(k*1080)) <= std_logic_vector(unsigned(matrixR(i+(k*1080))) + unsigned(matrixA(i+(j*1080)))*unsigned(matrixB(j+(p*1920))));
+				END LOOP;		
+				
+				IF j=1919 THEN
+					j <= 0;
+					k <= k + 1;
+				ELSE
+					j <= j + 1;
+				END IF;
 			WHEN STORER =>
 				d_out <= matrixR(x);
 			WHEN DONE =>
