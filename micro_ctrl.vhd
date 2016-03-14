@@ -53,6 +53,7 @@ ARCHITECTURE test OF micro_ctrl IS
 	SIGNAL data_in		: regfile;
 	SIGNAL data_len		: NATURAL RANGE 0 to 16;
 	SIGNAL i2c_busy		: STD_LOGIC;
+	SIGNAL i			: INTEGER;
 	
 BEGIN
 	i2c_m : I2C_Master PORT MAP(clk			=> clk,
@@ -77,18 +78,36 @@ BEGIN
 		addr <= "ZZZZZZZZZZZZZZZZZZZZZZZ";
 		d_out <= "ZZZZZZZZ";
 		we <= 'Z';
-		WAIT UNTIL rst = '0';
+		WAIT UNTIL rst = '0';	
+		
+		 load values into RAM
+		 matrix A contains all 1's and matrix B contains all 0's
+		we <= '1';
+		FOR i in 0 to 1080*1920-1 LOOP
+			addr <= std_logic_vector(to_unsigned(i, 23));
+			d_out <= "11111111";
+			WAIT UNTIL clk = '1';
+		END LOOP;
+		
+		FOR i in 0 to 1920*3-1 LOOP
+			addr <= std_logic_vector(to_unsigned(i + 2**22-1, 23));
+			d_out <= "00000000";
+			WAIT UNTIL clk = '1';
+		END LOOP;
+		we <= '0';
+			
+		
 		
 		--load data into data input for i2c master
 		data_len <= 4;
 		WAIT UNTIL clk = '1';
-		data_in(0) <= "00000000";
-		WAIT UNTIL clk = '1'; 
-		data_in(1) <= "01000000";
+		data_in(0) <= "00000000";	-- address of A
+		WAIT UNTIL clk = '1'; 	
+		data_in(1) <= "01000000";	-- address of B
 		WAIT UNTIL clk = '1';
-		data_in(2) <= "10000000";
+		data_in(2) <= "10000000"; 	-- address of R
 		WAIT UNTIL clk = '1';
-		data_in(3) <= "00000011";
+		data_in(3) <= "00000011"; 	-- value of P
 		WAIT UNTIL clk = '1';
 		
 		--start i2c master
