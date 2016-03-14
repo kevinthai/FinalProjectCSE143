@@ -71,6 +71,7 @@ BEGIN
 	--Attach SCL and SDA to pullup resistors; 'H' synthesizes to '1'
 	SCL_TOP <= 'H';
 	SDA_TOP <= 'H';
+	WE_TOP <= 'L';
 	
 	--------1 GHz Clock to drive micro_ctrl and co_proc--------
 	clock: PROCESS BEGIN
