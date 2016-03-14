@@ -1,0 +1,10 @@
+To run generateMatrices.py:
+
+python generateMatrices.py <int>
+
+To run matrixMult.java
+
+javac matrixMult.java
+java matrixMult <int>
+
+Note: there is no relation between generateMatrices.py and matrixMult.java
